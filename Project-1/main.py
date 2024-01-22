@@ -56,4 +56,6 @@ def remover_carro(id_carro: str):
         return {'mensagem': 'Carro não foi localizado'}
 
 
-
+@app.put("/carros/{id_carro}")
+def update_item(id_carro: int, carro: Automovel):
+    return {"item_name": carro.name, "id_carro": id_carro}
