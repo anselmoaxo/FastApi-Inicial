@@ -1,11 +1,21 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from uuid import uuid4
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
 
+origins = ['http://127.0.0.1:5500']
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class Automovel(BaseModel):
     id: Optional[str]
@@ -57,5 +67,10 @@ def remover_carro(id_carro: str):
 
 
 @app.put("/carros/{id_carro}")
-def update_item(id_carro: int, carro: Automovel):
-    return {"item_name": carro.name, "id_carro": id_carro}
+def atualizar_carro(id_carro: str, carro_atualizado: Automovel):
+    index = next((i for i, carro in enumerate(carros) if carro.id == id_carro), None)
+    if index is not None:
+        carros[index] = carro_atualizado
+        return {'mensagem': 'Carro atualizado com sucesso'}
+    else:
+        raise HTTPException(status_code=404, detail='Carro não encontrado')
