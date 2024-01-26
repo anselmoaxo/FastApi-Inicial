@@ -1,11 +1,14 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
-from uuid import uuid4
+from fastapi import FastAPI, Depends, HTTPException, status
+from Backend.schemas.schema_automovel import Automovel
+from Backend.models.model_automovel import AutomovelModel
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from Backend.database.config import get_db, criar_bd
+from Backend.repositorio.automovel_repositorio import AutomovelRepositorio
 
 
-app = FastAPI()
+app = FastAPI(title='API Loja de Automoveis')
 
 origins = ['http://127.0.0.1:5500']
 
@@ -16,61 +19,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-class Automovel(BaseModel):
-    id: Optional[str]
-    nome: str
-    marca: str
-    modelo: str
-    cor: str
-    preco: float
-
-
-# tipagem da lista Carros
-carros: List[Automovel] = []
-
-# lista todos so carros cadastrados
-@app.get('/carros')
-def listar_carros():
-    return carros
-
-
-# obtem o carro filtrado pelo ID
-@app.get('/carros/{id_carro}')
-def obter_carro(id_carro: str):
-    for carro in carros:
-        if id_carro == carro.id:
-            return carro
-    return {'mensagem': 'Carro não foi localizado'}
-
-
+criar_bd()
 # realiza o cadastro dos carros no lista
-@app.post('/carros')
-def cadastrar_carros(carro: Automovel):
-    carro.id = str(uuid4())
-    carros.append(carro)
-    return {'mensagem': 'Carro cadastrado com sucesso'}
+@app.post('/carros', response_model=Automovel, status_code=201)
+def criar_produtos(carro: Automovel, db: Session = Depends(get_db)):
+    try:
+        carro_criado = AutomovelRepositorio(db).incluir_automovel(carro)
+        return carro_criado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# realiza o delete da Lista carros pelo filtro do ID e Pela possição
-@app.delete('/carros/{id_carro}')
-def remover_carro(id_carro: str):
-    posicao = -1
-    for index, carro in enumerate(carros):
-        if carro.id == id_carro:
-            posicao = index
-            break
-    if posicao != -1:
-        carros.pop(posicao)
-    else:
-        return {'mensagem': 'Carro não foi localizado'}
-
-
-@app.put("/carros/{id_carro}")
-def atualizar_carro(id_carro: str, carro_atualizado: Automovel):
-    index = next((i for i, carro in enumerate(carros) if carro.id == id_carro), None)
-    if index is not None:
-        carros[index] = carro_atualizado
-        return {'mensagem': 'Carro atualizado com sucesso'}
-    else:
-        raise HTTPException(status_code=404, detail='Carro não encontrado')

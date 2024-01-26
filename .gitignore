@@ -20,6 +20,8 @@ site_build
 venv
 docs.zip
 archive.zip
+alembic.ini
+env.py
 
 # vim temporary files
 *~
